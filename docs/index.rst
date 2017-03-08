@@ -11,6 +11,7 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   model.rst
    api/autoindex.rst
 
 Indices and tables

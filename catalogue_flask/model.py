@@ -88,13 +88,64 @@ class Content(db.Model):
     May be at multiple paths on the filesystem
 
     sha256 is used for identification, md5 also provided for legacy
+
+    :var sha256: sha256 checksum
+    :var md5: md5 checksum
     """
     id = db.Column(db.Integer, primary_key=True)
-    sha256 = db.Column(db.Text, unique=True, index=True)
-    md5 = db.Column(db.Text, index=True)
-    mime = db.Column(db.Text, index=True)
+    sha256 = db.Column(db.String, unique=True, index=True, nullable=False)
+    md5 = db.Column(db.String, index=True, nullable=False)
+    type = db.Column(db.String)
+    last_scanned = db.Column(db.DateTime)
 
     paths = db.relationship("Path")
 
-    
+    __mapper_args__ = {
+            'polymorphic_identity':'content',
+            'polymorphic_on':type
+            }
+
+netcdf_variable_association = db.Table('netcdf_variable_association', db.Model.metadata,
+        db.Column('netcdf_id', db.Integer, db.ForeignKey('netcdf_content.id')),
+        db.Column('concretevar_id', db.Integer, db.ForeignKey('concrete_variable.id'))
+        )
+
+class NetcdfContent(Content):
+    """
+    Content of a NetCDF file
+
+    :var sha256: sha256 checksum
+    :var md5: md5 checksum
+    :var variables: list of :class:`~catalogue_flask.model.ConcreteVariable`
+    """
+    id = db.Column(db.Integer, db.ForeignKey('content.id'), primary_key=True)
+    variables = db.relationship("ConcreteVariable",
+            secondary=netcdf_variable_association)
+
+    __mapper_args__ = {
+            'polymorphic_identity':'netcdfcontent',
+            }
+
+class ConcreteVariable(db.Model):
+    """
+    An abstract variable, may have many aliased names
+
+    :var cf_name: NetCDF-CF name
+    :var aliases: List of :class:`~catalogue_flask.model.Variable`
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    cf_name = db.Column(db.String)
+    aliases = db.relationship("Variable")
+
+class Variable(db.Model):
+    """
+    An alternate name for a variable
+
+    :var name: The name of this alias
+    :var concrete: The concrete variable this aliases
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+    concretevariable_id = db.Column(db.Integer, db.ForeignKey('concrete_variable.id'), index=True)
+    concrete = db.relationship("ConcreteVariable")
 

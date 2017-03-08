@@ -17,7 +17,6 @@ from __future__ import print_function
 from .model import *
 import os
 import hashlib
-from magic import Magic
 
 def scan_filesystem(rootdir, db):
     """
@@ -43,7 +42,6 @@ def update_content(db):
     Update any missing content
     """
     session = db.session
-    magic = Magic(mime=True)
 
     for path in Path.query.filter_by(content = None):
         try:
@@ -51,8 +49,7 @@ def update_content(db):
             content = Content.query.filter_by(sha256 = sha256).one_or_none()
             
             if content is None:
-                content = Content(sha256 = sha256, md5 = md5, 
-                        mime=magic.from_file(path.path))
+                content = Content(sha256 = sha256, md5 = md5)
                 session.add(content)
                 session.commit()
 
